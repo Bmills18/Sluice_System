@@ -1,0 +1,420 @@
+<?xml version="1.0"?><shapefile version="1" type="dynamic" title="" description="" useFirstShapeForBadValue="0" width="103px" height="40px"><versionheaders><versionheader name="PS" value="6.51"/></versionheaders><scripts><script event="onshapeload" language="VBScript" id=""><![CDATA[Page.SetAttribute "CMenu_GSH",me.id]]></script><script event="" language="VBScript" id="830C6FA2-7D91-47A1-9086-3DC9E8651E0C"><![CDATA['COPYRIGHT (c) 2004-2010
+'HONEYWELL INTL.,
+'ALL RIGHTS RESERVED
+
+'This shape provides the Solution Pack Context Menu functionality.
+'All subroutines are called within SP context menu files
+
+'Acknowledge the alarm on currently selected point
+sub acknowledge ()
+	window.external.invokemenu2 "Acknowledge Alarm"
+end sub
+
+'Invoke detail display of currently selected point 
+sub detail ()
+	window.external.invokemenu2("Request Point Detail")
+end sub
+
+'Invoke the trend group where currently selected point is configured or prompt for trend group number.
+sub trd_invoke ()
+	on error resume next
+	dim oshape, custtrd
+	set oshape = document.getelementbyid(page.getattribute("lastselection")).parentnode.parentnode
+	custtrd=oshape.getcustomproperty("num","cp_custtrd")
+	if custtrd<>"" then 
+		window.external.requestserverlrn 21,8,custtrd
+	else
+		window.external.invokemenu2("request trend")
+	end if			
+	if err.number <>0 and window.external.environment = 0 then window.external.LogMessage "trd_invoke ->" & oShape.ID & " " & err.description 
+end sub
+
+'Invoke the group where currently selected point is configured or prompt for group number.
+sub grp_invoke ()
+	on error resume next
+	dim oshape, custgrp
+	set oshape = document.getelementbyid(page.getattribute("lastselection")).parentnode.parentnode
+	custgrp = oshape.getcustomproperty("num","cp_custgrp")
+	if custgrp <> "" then
+		window.external.requestserverlrn 21,49,custgrp
+	else
+		window.external.invokemenu2("request group")
+	end if
+	if err.number <>0 and window.external.environment = 0 then window.external.LogMessage "grp_invoke ->" & oShape.ID & " " & err.description 
+end sub
+
+'Invoke associated display for currently selected point
+sub ascdsp ()
+	window.external.invokemenu2("associated display")
+end sub
+
+'Open help file using Windows Explorer, if configured in cm_file custom property
+sub help ()
+	on error resume next
+	dim oshape, spath, cm_file
+	set oshape = document.getelementbyid(page.getattribute("lastselection")).parentnode.parentnode
+	cm_file = oshape.getcustomproperty("text","cm_file")
+	if instr(cm_file,"\")>0 then
+ 		window.external.shell "explorer.exe " & cm_file,1
+	else
+ 		spath = page.document.url
+ 		spath=mid (spath,8,len(spath))
+ 		spath=mid (spath,1,instrrev(spath,"\"))  & "helpfiles\" & cm_file
+ 		spath = Replace(spath,"%20"," ")
+ 		window.external.shell "explorer.exe " & spath,1
+	end if
+	if err.number <>0 and window.external.environment = 0 then window.external.LogMessage "help ->" & oShape.ID & " " & err.description 
+end sub
+
+'Open Support Display if Configured in "cp_SupDsp_File" custom property
+sub SupDsp ()
+	on error resume next
+	dim oshape, spath, cm_file
+	set oshape = document.getelementbyid(page.getattribute("lastselection")).parentnode.parentnode
+	cm_file = oshape.getcustomproperty("text","cp_SupDsp_File")
+	set oShape=document.getelementbyid(oSource.id).parentnode.parentnode
+	sname=oShape.getcustomproperty("Point","tagname") 'in case sname below returns "" 
+	if typename(oShape.objects("ConAlarmState"))<>"Nothing" then
+		sname=oShape.objects("ConAlarmState").datavalue("tagname.name")
+    elseif typename(oShape.objects("ScConAlpPV"))<>"Nothing" then
+		sname=oShape.objects("ScConAlpPV").datavalue("tagname.name")
+    end if
+	if cm_file<>"" then window.external.currentpage=cm_file & "?currentpoint=" & sname 
+	if err.number <> 0 and window.external.environment = 0 then window.external.LogMessage "SupDsp ->" & oShape.ID & " " & err.description 
+end sub
+
+'Called in OnPage event of the Help Item of the Context Menu. Manipulates the menu item text.
+sub pageload(osource)
+	on error resume next
+	dim oshape, spath, cm_file
+	set oshape = document.getelementbyid(page.getattribute("lastselection")).parentnode.parentnode
+	cm_label = oshape.getcustomproperty("text","cm_label")
+	if (cm_label <> "") then	
+		oSource.all("text").innertext=" " & cm_label	
+		cm_file=oshape.getcustomproperty("text","cm_file")
+		if cm_file="" then osource.disabled=true		
+	end if
+	if err.number <>0 and window.external.environment = 0 then window.external.LogMessage "pageload ->" & oShape.ID & " " & oSource & " " & err.description 
+end sub
+
+'Called in OnPage event of the Support Display Item of the Context Menu. Manipulates the menu item text.
+sub pageloadSupDsp(osource)
+	on error resume next
+	dim oshape, spath, cm_file
+	set oshape = document.getelementbyid(page.getattribute("lastselection")).parentnode.parentnode
+	cm_label = oshape.getcustomproperty("text","cp_SupDsp_Label")
+	if (cm_label <> "") then	
+		oSource.all("text").innertext=" " & cm_label	
+		cm_file=oshape.getcustomproperty("text","cp_SupDsp_File")
+		if cm_file="" then osource.disabled=true		
+	end if
+	if err.number <>0 and window.external.environment = 0 then window.external.LogMessage "pageloadSupDsp ->" & oShape.ID & " " & oSource & " " & err.description 
+end sub
+
+
+' Enable/Disable Add Traces to Trend functionality 
+sub AddTrdCnfg (oSource, sText)
+	On Error Resume Next
+	dim oShape, spath, cm_param
+	if isnull(page.getattribute("Trend_Sup_GSH")) then 
+   		oSource.disabled = True
+  		exit sub
+	end if
+	set oShape = document.getElementById(page.getattribute("LastSelection")).parentnode.parentnode
+	cm_param = oShape.GetCustomProperty("Parameter",sText)
+	if cm_param = "" then oSource.disabled = True
+	if err.number <>0 and window.external.environment = 0 then window.external.LogMessage "AddTrdCnfg ->" & oShape.ID & " " & oSource & " "& sText & " " & err.description 
+end sub
+
+'Enable/Disable View Trend Configuration functionality. Called in OnPage event of View Trend Item
+Sub View_Trd_Load(oSource)
+	on error resume next
+	if isnull(page.getattribute("Trend_Sup_GSH")) or isnull(page.getattribute("TrdSel"))  then oSource.disabled = True
+    if oSOurce.id="mnu_View_TrdCnf" then
+		for each oObj in page.all
+	   		if instr(ucase(oObj.classname),"HSC.TREND.1")<>0 then oSource.disabled = True
+		next
+	end if	  
+end sub
+
+'View Trend Configuration if enabled in View_Trd_Load
+sub view_trd
+	dim oShape
+	on error resume next
+	set oshape=document.getelementbyid(page.getattribute("Trend_Sup_GSH"))
+	if oshape.objects("PbHide").style.visibility="visible" then oshape.objects("PbHide").click
+	oshape.style.zindex=5000
+	iPageWidth = page.style.pixelwidth
+	iSelectedShapeX = document.activeElement.parentnode.parentnode.style.pixelleft
+	if iSelectedShapeX > iPageWidth/2 then
+		iTableLeft = 20
+	else
+		iTableLeft = iPageWidth - 420
+	end if
+	oshape.style.pixelleft=iTableLeft
+	oshape.style.pixeltop=80
+	oshape.objects("trdtbl").style.visibility="visible"
+	oshape.objects("trdtbl").style.pixelwidth=400
+	oshape.objects("PbHide").style.visibility="visible"
+	oshape.objects("PbHide").style.pixelleft=oshape.objects("PbHide").style.pixelleft+336
+	if oShape.objects("alpisprotected").value = 1 and window.external.securitylevel<4 then oshape.objects("RecProtected").style.pixelwidth=400	
+	if err.number <>0 and window.external.environment = 0 then window.external.LogMessage "view_trd ->" & oShape.ID & " " & oSource & " " & err.description 
+end sub
+
+'Invoke mini trend popup
+sub view_mini_trend
+	dim oShape
+	on error resume next
+	set oShape = document.getElementById(page.getattribute("LastSelection")).parentnode.parentnode    
+	Trd_ParSP= oShape.GetCustomProperty("Parameter","Trd_PointSP")
+	DotLoc= Instr(1, Trd_ParSP,".")
+	sPointSP_CP= Mid(Trd_ParSP,1, DotLoc-1)
+	sParameterSP_CP = Mid(Trd_ParSP, DotLoc+1, 24)
+	cm_pointSP = oShape.GetCustomProperty("Point",sPointSP_CP)
+	if cm_pointSP = "" then cm_pointSP = sPointSP_cp
+	cm_paramSP = oShape.GetCustomProperty("Parameter",sParameterSP_CP)
+	if cm_paramSP = "" then cm_paramSP = sParameterSP_CP
+	Trd_ParPV= oShape.GetCustomProperty("Parameter","Trd_PointPV")
+	DotLoc= Instr(1, Trd_ParPV,".")
+	sPointPV_CP= Mid(Trd_ParPV,1, DotLoc-1)
+	sParameterPV_CP = Mid(Trd_ParPV, DotLoc+1, 24)
+	cm_pointPV = oShape.GetCustomProperty("Point",sPointPV_CP)
+	if cm_pointPV = "" then cm_pointPV = sPointPV_cp
+	cm_paramPV = oShape.GetCustomProperty("Parameter",sParameterPV_CP)
+	if cm_paramPV = "" then cm_paramPV = sParameterPV_CP
+    Trd_ParOP= oShape.GetCustomProperty("Parameter","Trd_PointOP")
+	DotLoc= Instr(1, Trd_ParOP,".")
+	sPointOP_CP= Mid(Trd_ParOP,1, DotLoc-1)
+	sParameterOP_CP = Mid(Trd_ParOP, DotLoc+1, 24)
+	cm_pointOP = oShape.GetCustomProperty("Point",sPointOP_CP)
+	if cm_pointOP = "" then cm_pointOP = sPointOP_cp
+	cm_paramOP = oShape.GetCustomProperty("Parameter",sParameterOP_CP)
+	if cm_paramOP = "" then cm_paramOP = sParameterOP_CP
+	xcoord=page.getstyleclassproperty("Mini_Trend","left_position")
+	ycoord=page.getstyleclassproperty("Mini_Trend","top_position")
+	set oSview=getobject("","Honeywell.Workspace.Client")
+	If oSview.IsManagerActive = false then
+		if xcoord="default" or ycoord="default" then
+			hdxpopupbehavior.createpopupwindow "Mini_Trend_Popup.htm?currentpoint=minitrd"& round (rnd*10000) & "&Point1=" & cm_pointPV & "&Point2=" & cm_pointSP & "&Point3=" & cm_pointOP & "&Parameter1=" & cm_paramPV & "&Parameter2=" & cm_paramSP & "&Parameter3="& cm_paramOP, 0, 0, 1
+		else 
+			set oMini_trd=HdxPopupBehavior.FindPopup("minitrd")
+			if typename(oMini_trd)<>"Nothing" then oMini_trd.close
+			hdxpopupbehavior.createpopupwindow "Mini_Trend_Popup.htm?currentpoint=minitrd"& round (rnd*10000) & "&Point1=" & cm_pointPV & "&Point2=" & cm_pointSP & "&Point3=" & cm_pointOP & "&Parameter1=" & cm_paramPV & "&Parameter2=" & cm_paramSP & "&Parameter3="& cm_paramOP, xcoord, ycoord, 0
+		end if
+    else
+		hdxpopupbehavior.createpopupwindow "Mini_Trend_Popup.htm?currentpoint=minitrd"& round (rnd*10000) & "&Point1=" & cm_pointPV & "&Point2=" & cm_pointSP & "&Point3=" & cm_pointOP & "&Parameter1=" & cm_paramPV & "&Parameter2=" & cm_paramSP & "&Parameter3="& cm_paramOP, 0, 0, 1
+	end if
+end sub
+
+' Invoke trend popup. called within sp_systrdsel_sm.xml
+sub trd_popup
+	on error resume next
+	set oShape = document.getElementById(page.getattribute("Trend_Sup_GSH"))
+	sFP = "Chart_Popup_CP.htm?currentpoint=dummy" & oShape.objects("AlpTrendGrp").value
+	for i = 1 to 32
+		point = oshape.objects("TrdTbl").fields.item("Point.value").getvalue(i-1)
+		par = oshape.objects("TrdTbl").fields.item("Parameter.value").getvalue(i-1)
+		sFP = sFP & "&Point" & i & "=" & point & "&Parameter"& i & "=" & par
+	next
+	xcoord=page.getstyleclassproperty("Trend_popup","left_position")
+	ycoord=page.getstyleclassproperty("Trend_popup","top_position")
+	set oSview=getobject("","Honeywell.Workspace.Client")
+	If oSview.IsManagerActive = false then
+		if xcoord="default" or ycoord="default" then
+			hdxpopupbehavior.createpopupwindow sFP,0,0,1
+		else 
+			set oChrt_Popup=HdxPopupBehavior.FindPopup("dummy")
+			if typename(oChrt_Popup)<>"Nothing" then oChrt_Popup.close
+			hdxpopupbehavior.createpopupwindow sFP,xcoord,ycoord,0
+		end if
+    else
+		hdxpopupbehavior.createpopupwindow sFP,0,0,1
+	end if
+end sub
+
+'Enable/Disable Detail Display Functionality in Fire and Gas Context Menu.
+sub fire_gas_pageload(oSource)
+	dim oShape
+	on error resume next
+	set oshape = document.getelementbyid(page.getattribute("lastselection")).parentnode.parentnode
+	index = cint(right(oSource.id,1) )
+	mn_txt=oShape.getcustomproperty("Point",oShape.customproperties.Item(index).name)
+	if mn_txt="" then 
+   		oSource.disabled=true
+	else
+  		oSource.all("text").innertext="Detail " & ucase(mn_txt)  
+   		oSource.disabled=false
+	end if
+	if err.number <>0 and window.external.environment = 0 then window.external.LogMessage "fire_gas_pageload ->" & oShape.ID & " " & oSource & " " & err.description 
+end sub
+
+'Invoke Detail Display for Fire and Gas point if enabled in fire_gas_pageload
+sub fire_gas_detail(oSource)
+    on error resume next
+	window.external.requesttask 21,73,0,0,0,mid(oSource.all("text").innertext,8,len(oSource.all("text").innertext)-7)
+end sub
+' subroutines added in 2009
+sub Toggle_SCM_NameDesc (pointtype)
+	on error resume next
+	dim oshape, custgrp, sDesc
+	set oshape = document.getelementbyid(page.getattribute("lastselection")).parentnode.parentnode
+	set oText = oShape.objects("TxtNameSeq")
+	select case pointtype
+		case "cda"  sDesc = "desc"
+		case "hpm", "hg"  sDesc = "ptdesc"
+		case "scd" sDesc = "description"
+	end select
+	if oShape.getcustomproperty("Parameter","cp_BlockName")<>"" then
+		sName = oShape.getcustomproperty("Parameter","cp_BlockName")
+		sDVDesc = "tagname." & sName & "."  & sDesc
+	else
+		if typename(oShape.objects("ConAlarmState"))<>"Nothing" then
+			sName=oShape.objects("ConAlarmState").datavalue("tagname.name")
+		elseif oShape.objects("ScConAlpPV").dataexists("tagname.name") then
+			sName=oShape.objects("ScConAlpPV").datavalue("tagname.name")
+	    else 
+			sName = oShape.getcustomproperty("Point","Tagname")
+		end if
+		sDVDesc = "tagname." & sDesc
+	end if
+	if oText.innertext = sName then
+		oText.innertext = oShape.objects("ScConAlpPV").datavalue(sDVDesc)
+	else
+		oText.innertext =sName
+	end if
+	if err.number <>0 and window.external.environment = 0 then window.external.LogMessage "Toggle_SCM_NameDesc ->" & oShape.ID & " " & err.description 
+end sub
+
+sub TagnameYoking_load(oSource)
+	dim oShape,Database,sDB,sTagname,sql,rs
+	on error resume next
+	set oshape = document.getelementbyid(page.getattribute("lastselection")).parentnode.parentnode
+	sDB = page.GetStyleClassProperty("DatabaseFile","Filename")
+
+	set Database = CreateObject("ADODB.Connection")
+	Database.Open("DRIVER={Microsoft Access Driver (*.mdb)}; DBQ=" _
+	& sDB )
+	if typename(oShape.objects("ConAlarmState"))<>"Nothing" then
+		sTagname=oShape.objects("ConAlarmState").datavalue("tagname.name")
+	elseif oShape.objects("ScConAlpPV").dataexists("tagname.name") then
+		sTagname=oShape.objects("ScConAlpPV").datavalue("tagname.name")
+    else 
+		sTagname = oShape.getcustomproperty("Point","Tagname")
+	end if	
+	sql = "select * from TagnameYoking WHERE Tagname Like '" & sTagname & "'"
+  set rs = database.Execute(sql)
+  if rs.EOF = true then 
+  		oSource.disabled = true
+  else
+		oSource.disabled = false
+  end if
+database.close
+set database = nothing
+
+if err.number <>0 and window.external.environment = 0 then window.external.LogMessage "yoking_load ->" & oShape.ID & " " & oSource & " " & err.description 
+end sub
+
+sub TagnameYoking()
+	dim oShape,Database,sDB,sTagname,sql,rs,i
+	on error resume next
+	i=1
+	set oshape = document.getelementbyid(page.getattribute("lastselection")).parentnode.parentnode
+	sDB = page.GetStyleClassProperty("DatabaseFile","Filename")
+
+	set Database = CreateObject("ADODB.Connection")
+	Database.Open("DRIVER={Microsoft Access Driver (*.mdb)}; DBQ=" _
+	& sDB )
+
+	if typename(oShape.objects("ConAlarmState"))<>"Nothing" then
+		sTagname=oShape.objects("ConAlarmState").datavalue("tagname.name")
+	elseif oShape.objects("ScConAlpPV").dataexists("tagname.name") then
+		sTagname=oShape.objects("ScConAlpPV").datavalue("tagname.name")
+    else 
+		sTagname = oShape.getcustomproperty("Point","Tagname")
+	end if	
+	 
+	sql = "select * from TagnameYoking WHERE Tagname Like '" & sTagname & "'"
+  set rs = database.Execute(sql)
+  if rs.EOF = true then
+  		window.external.Application.messagezonetext "Yoking not configured" 
+  else
+		while not rs.EOF and i < 4
+			if not isnull(rs.fields(1).value) then 
+				window.external.Application.currentpage = rs.fields(1).value
+				msgbox rs.fields(1).value
+			end if
+			rs.movenext
+			i=i+1
+		wend
+  end if
+database.close
+set database = nothing
+
+if err.number <>0 and window.external.environment = 0 then window.external.LogMessage "yoking_load ->" & oShape.ID & " " & oSource & " " & err.description 
+end sub
+
+'************************************************************************************
+'                        Level 4 displays
+'************************************************************************************
+
+sub L4Detail_load(oSource)
+	dim oShape,Database,sDB,sTagname,sql,rs
+	on error resume next
+	set oshape = document.getelementbyid(page.getattribute("lastselection")).parentnode.parentnode
+	sDB = page.GetStyleClassProperty("DatabaseFile","Filename")
+	set Database = CreateObject("ADODB.Connection")
+	Database.Open("DRIVER={Microsoft Access Driver (*.mdb)}; DBQ=" & sDB )
+	if typename(oShape.objects("ConAlarmState"))<>"Nothing" then
+		sTagname=oShape.objects("ConAlarmState").datavalue("tagname.name")
+	elseif oShape.objects("ScConAlpPV").dataexists("tagname.name") then
+		sTagname=oShape.objects("ScConAlpPV").datavalue("tagname.name")
+    else 
+		sTagname = oShape.getcustomproperty("Point","Tagname")
+	end if	
+	sql = "select * from L4_Detail WHERE Tagname Like '" & sTagname & "'"
+    set rs = database.Execute(sql)
+    if rs.EOF = true then 
+  		oSource.disabled = true
+    else
+		oSource.disabled = false
+    end if
+    database.close
+    set database = nothing
+    if err.number <>0 and window.external.environment = 0 then window.external.LogMessage "L4Detail_load ->" & oShape.ID & " " & oSource & " " & err.description 
+end sub
+
+sub L4Detail()
+	dim oShape,Database,sDB,sTagname,sql,rs, sURL
+	on error resume next
+	i=1
+	set oshape = document.getelementbyid(page.getattribute("lastselection")).parentnode.parentnode
+	sDB = page.GetStyleClassProperty("DatabaseFile","Filename")
+
+	set Database = CreateObject("ADODB.Connection")
+	Database.Open("DRIVER={Microsoft Access Driver (*.mdb)}; DBQ=" & sDB )
+
+	if typename(oShape.objects("ConAlarmState"))<>"Nothing" then
+		sTagname=oShape.objects("ConAlarmState").datavalue("tagname.name")
+	elseif oShape.objects("ScConAlpPV").dataexists("tagname.name") then
+		sTagname=oShape.objects("ScConAlpPV").datavalue("tagname.name")
+    else 
+		sTagname = oShape.getcustomproperty("Point","Tagname")
+	end if	
+	 
+	sql = "select * from L4_Detail WHERE Tagname Like '" & sTagname & "'"
+    set rs = database.Execute(sql)
+    if rs.EOF = true then
+  		window.external.Application.messagezonetext "L4Detail not configured" 
+    else
+  	if not isnull(rs.fields(3).value) then sURL = rs.fields(3).value & "?currentpoint=" & sTagname 
+		while not rs.EOF 
+			if not isnull(rs.fields(1).value) then sURL = sURL & "&" & rs.fields(2).value & "=" & rs.fields(1).value 
+			rs.movenext
+		wend
+    end if
+	database.close
+	set database = nothing
+	if sURL <>"" then window.external.Application.currentpage = sURL
+	if err.number <>0 and window.external.environment = 0 then window.external.LogMessage "yoking_load ->" & oShape.ID & " " & oSource & " " & err.description 
+end sub]]></script></scripts><parameters><parameter name="Revision" type="Num" description="" defaultvalue="R400 Rev.0"/></parameters><shapes><shape><element><html><content><![CDATA[
+<DIV tabIndex=-1 id=TxtGSH class=hvg.textbox.1 style="FONT-SIZE: 8pt; OVERFLOW: hidden; TEXT-DECORATION: none; HEIGHT: 40px; FONT-FAMILY: Arial; WIDTH: 103px; POSITION: absolute; FONT-WEIGHT: bold; COLOR: #ffdab9; FONT-STYLE: normal; TEXT-ALIGN: center; LEFT: 42px; TOP: 10px; BEHAVIOR: url(#HDXVectorFactory#text); VISIBILITY: hidden" globalscripts hdxproperties="FillColor:#006400;fillColorBlink:False;FillStyle:0;Height:40;lineColorBlink:False;LineStyle:1;textColor:#ffdab9;textColorBlink:False;TotalRotation:-1;value:;Width:103;">CMenu&nbsp;General Script Holder<BR>{%Num::Revision%} </DIV>]]></content></html></element></shape></shapes></shapefile>

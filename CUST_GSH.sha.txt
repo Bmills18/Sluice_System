@@ -1,0 +1,849 @@
+<?xml version="1.0"?><shapefile version="1" type="dynamic" title="" description="" useFirstShapeForBadValue="0" width="103px" height="40px"><versionheaders><versionheader name="PS" value="6.51"/></versionheaders><scripts><script event="" language="VBScript" id="17ADBAF7-D84D-4BAC-873C-008E230343FB"><![CDATA[Dim REAL01	'For CUST_CDA_IKTAR1/IKTAR2 (SootBlower graphic - SB1)
+REAL01 = 0
+Dim intTimer_ADVC
+'-------------------------------------------------------
+'Function used in shape : Multi Tags ExecState
+'-------------------------------------------------------
+sub CUST_HPM_ExecState_MultTags_Alp_OnUpdate(oSource)
+dim oShape,PtExeCst,qual
+On error resume next
+set oShape=oSource.parentnode.parentnode
+set oExStObj=oShape.objects("LinExecState")
+stagcount = 0
+for n=0 to oshape.customProperties.Count - 1
+	if oshape.customProperties.Item(n).type = "Point" then 
+		stagcount = stagcount + 1
+	end if
+next 
+
+for i=0 to stagcount - 1
+    str=cstr(i)
+	if str="0" then str=""
+	PtExeCst=oSource.Datavalue("Tagname" & str & ".cp_ptexecst")
+	if PtExeCst=1 then
+		qual=0
+	else
+		qual=1
+		exit for
+	end if
+next
+	if qual=0 then
+	  oExStObj.styleclass="LinExecState_OnScan_Active"
+	else
+	  oExStObj.styleclass="LinExecState_OffScan_InActive"
+	end if
+	if err.number<>0 then window.external.LogMessage "CUST_HPM_ExecState_MultTags_Alp_OnUpdate ->" & oSource.id & " " & err.description
+end sub
+'-------------------------------------------------------
+'Function used in shape : Multi Tags Graph Alp Error
+'-------------------------------------------------------
+sub CUST_Graph_AlpError_MultTags_OnUpdate(oSource)
+dim oShape,CFGErr,Qualg,qual
+On error resume next
+set oShape=oSource.parentnode.parentnode
+stagcount = 0
+for n=0 to oshape.customProperties.Count - 1
+	if oshape.customProperties.Item(n).type = "Point" then 
+		stagcount = stagcount + 1
+	end if
+next 
+qual=1
+for i=0 to stagcount - 1
+    str=cstr(i)
+	if str="0" then str=""
+	CFGErr=true
+	CfgErr=oSource.qualityconfigerror("Tagname" & str & ".name")
+	Qualg=false
+	Qualg=oSource.qualitygood("Tagname" & str & ".name")
+	if CFGErr=true or Qualg=false then qual=0
+next
+	if (oSource.binding.dataobjects(0).quality=33216 or oSource.binding.dataobjects(0).quality=34240) and qual=1 then
+	  oShape.objects("TxtError").style.visibility="hidden"
+	else
+	  oShape.objects("TxtError").style.visibility="visible"
+	end if
+	if err.number<>0 then window.external.LogMessage "CUST_Graph_AlpError_MultTags_OnUpdate ->" & oSource.id & " " & err.description
+end sub
+
+'-------------------------------------------------------
+'CUST_HPM_Collect_Divert_isa_h_pai_01
+'-------------------------------------------------------
+Sub CUST_HPM_OnOffValves_DO_OnUpdate(oSource)
+   dim iPV,oShape,iOP,index,indexOP,iPV1
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   iPV=oSource.value
+   iPV1=oSource.datavalue("Tagname1.cp_so")
+   index=oShape.getCustomProperty("Style","cp_styleForPV" & iPV1)
+   if typename(oShape.objects("PlgIn")) <> "Nothing" then oShape.objects("PlgIn").styleclass="PlgIn_" & index	   
+   if typename(oShape.objects("PlgOut")) <> "Nothing" then oShape.objects("PlgOut").styleclass="PlgOut_" & index
+
+   if iPV=cint(oShape.getcustomproperty("Num","cp_BadPVState")) then
+      oShape.objects("TxtBad").styleclass="TxtBad_Bad"
+   else
+      oShape.objects("TxtBad").styleclass="TxtBad_NotBad"
+   end if
+   if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_HPM_OnOffValves_DO_OnUpdate ->" & oSource.id & " " & err.description
+end sub
+
+'-------------------------------------------------------
+'CUST_HPM_$HP_Feeder_isa_h_pai_01
+'-------------------------------------------------------
+Sub CUST_HPM_HP_Feeder_AlpPV_OnUpdate(oSource)
+   dim iPV,oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   iPV=oSource.value
+   index=oShape.getCustomProperty("Style","cp_styleForPV" & iPV)
+   if typename(oShape.objects("Inset")) <> "Nothing" then oShape.objects("Inset").styleclass="OvlBody_" & index	   
+   if typename(oShape.objects("Flange")) <> "Nothing" then oShape.objects("Flange").styleclass="OvlBody_" & index
+   if iPV=cint(oShape.getcustomproperty("Num","cp_BadPVState")) then
+      oShape.objects("TxtBad").styleclass="TxtBad_Bad"
+   else
+      oShape.objects("TxtBad").styleclass="TxtBad_NotBad"
+   end if
+   if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_HPM_HP_Feeder_AlpPV_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+'-------------------------------------------------------
+'CUST_K1_HLAC1
+'-------------------------------------------------------
+Sub CUST_K1_HLAC1_AlpPV_OnUpdate(oSource)
+   dim iPV,oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   iPV=oSource.datavalue("Tagname.cp_num")
+	Select Case iPV
+		case 0
+			oShape.objects("ScConAlpPV").innertext = "OFF"
+		case 1
+			oShape.objects("ScConAlpPV").innertext = "ON"
+		case 2
+			oShape.objects("ScConAlpPV").innertext = "SUSP"
+		case 3
+			oShape.objects("ScConAlpPV").innertext = "INIT"
+		case 4
+			oShape.objects("ScConAlpPV").innertext = "ADVY"
+		case else
+			oShape.objects("ScConAlpPV").innertext = "????"
+		End Select
+    if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_K1_HLAC1_AlpPV_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+Sub CUST_K1_HLAC1_AlpPV_Star_OnUpdate(oSource)
+   dim iPV,oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   iPV= oSource.datavalue("Tagname.cp_partial")
+   if iPV = 1 then
+   		oShape.objects("TxtStar").style.visibility = "visible"
+   else
+   		oShape.objects("TxtStar").style.visibility = "hidden"
+   end if
+    if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_K1_HLAC1_AlpPV_Star_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+'----------------------------------------------------------------
+'CUST RegCtl Valves Split Range
+'----------------------------------------------------------------
+Sub CUST_HPM_RegCntlValve_SplitRange_AlpVal_OnUpdate(oSource)
+   dim rVal,iVal,rClosed,rRangeL,rRangeH,oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   rVal=oSource.datavalue("Tagname1.cp_op")
+   rClosed=csng(oShape.getcustomproperty("Num","ClosedValue"))
+   rRangeL=csng(oShape.getcustomproperty("Num","RangeLow"))
+   rRangeH=csng(oShape.getcustomproperty("Num","RangeHigh"))
+
+   sRange = lcase(page.GetStyleClassProperty("UseExtended_RegValve_range","key")) 
+   if rVal>100 then 
+      rVal=100
+   elseif rVal<0 then 
+      rVal=0
+   end if
+
+   iVal = 100*(rVal - rRangeL)/(rRangeH - rRangeL)
+
+   	if iVal>100 then 
+	      iVal=100
+	elseif iVal<0 then 
+	      iVal=0
+	end if
+   if oShape.objects("TxtOP") is nothing then
+      oShape.objects("IndVal").value=iVal
+   else
+	  oShape.objects("TxtOP").innertext=round(iVal) & "%"	
+   end if
+
+   if rVal > rClosed then
+	  index=oShape.getCustomProperty("Style","cp_styleForOpen")
+   else
+	  index=oShape.getCustomProperty("Style","cp_styleForClose")
+   end if
+   if typename(oShape.objects("PlgIn")) <> "Nothing" then oShape.objects("PlgIn").styleclass="PlgIn_" & index	   
+   if typename(oShape.objects("PlgOut")) <> "Nothing" then oShape.objects("PlgOut").styleclass="PlgOut_" & index
+   if typename(oShape.objects("PlgOut1")) <> "Nothing" then oShape.objects("PlgOut1").styleclass="PlgOut_" & index
+   if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_HPM_RegCntlValve_SplitRange_AlpVal_OnUpdate ->" & oSource.id & " " & err.description
+end sub
+
+'----------------------------------------------------------------
+'CUST_S_HLACT1
+'----------------------------------------------------------------
+Sub CUST_S_HLACT1_AlpPV_OnUpdate(oSource)
+   dim oShape, oMode, oModeAtr
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   oMode= oSource.datavalue("Tagname.cp_mode")
+   oModeAtr= oSource.datavalue("Tagname.cp_modeAttr")
+   if oModeAtr = "PROGRAM" then
+   		oShape.objects("TxtMode").innertext = "P-" & oMode
+		oShape.objects("lineControlON").style.visibility = "visible"
+		oShape.objects("lineControlOFF").style.visibility = "hidden"
+   else
+   		oShape.objects("TxtMode").innertext = oMode
+		oShape.objects("lineControlON").style.visibility = "hidden"
+		oShape.objects("lineControlOFF").style.visibility = "visible"
+   end if
+    if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_S_HLACT1_AlpPV_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+'-------------------------------------------------------
+'CUST_HPM_OverloadTrip
+'-------------------------------------------------------
+Sub CUST_HPM_OverloadTrip_OnUpdate(oSource)
+   dim oShape, iPV, iPV1
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   iPV=oSource.value
+   iPV1= oSource.datavalue("Tagname1.cp_pv")
+   if iPV = 0 then
+   	  oShape.objects("Oval").styleclass	= oShape.getCustomProperty("Style","cp_StyleForTrip")
+   elseif iPV1 = 0 then
+   	  oShape.objects("Oval").styleclass	= oShape.getCustomProperty("Style","cp_StyleForPV0")
+   elseif iPV1 = 1 then
+   	  oShape.objects("Oval").styleclass	= oShape.getCustomProperty("Style","cp_StyleForPV1")
+   end if
+   if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_HPM_OverloadTrip_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+'--------------------------------------------
+'CUST_Pump_Array_isa_r_pi_01 & CUST_Pump_Array_isa_l_pi_01
+'--------------------------------------------
+Sub CUST_Pump_Array_OnUpdate(oSource)
+   dim iPV,oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   iPV=oSource.value
+   index=oShape.getCustomProperty("Style","cp_styleForPV" & iPV)
+   if typename(oShape.objects("OvlBody")) <> "Nothing" then oShape.objects("OvlBody").styleclass="OvlBody_" & index	   
+   if typename(oShape.objects("PlgBody")) <> "Nothing" then oShape.objects("PlgBody").styleclass="PlgBody_" & index
+   if typename(oShape.objects("RecBody")) <> "Nothing" then oShape.objects("RecBody").styleclass="RecBody_" & index
+   if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_Pump_Array_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+'--------------------------------------------
+'CUST_S_HLSPCCAUS
+'--------------------------------------------
+Sub CUST_S_HLSPCCAUS_XBAR_OnUpdate(oSource)
+   dim iPV,oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   iPV=oSource.value
+   if iPV <> 0 then
+   		oSource.styleclass = oShape.getCustomProperty("Style","ScConAlpPV_Enum6")
+	else
+		oSource.styleclass = oShape.getCustomProperty("Style","ScConAlpPV_Enum9")
+	end if
+   if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_S_HLSPCCAUS_XBAR_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+Sub CUST_S_HLSPCCAUS_RANGE_OnUpdate(oSource)
+   dim iPV,oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   iPV=oSource.value
+   if iPV <> 0 then
+   		oSource.styleclass = oShape.getCustomProperty("Style","ScConAlpPV_Enum8")
+	else
+		oSource.styleclass = oShape.getCustomProperty("Style","ScConAlpPV_Enum9")
+	end if
+   if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_S_HLSPCCAUS_RANGE_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+Sub CUST_S_HLSPCCAUS_SW_OnUpdate(oSource)
+   dim oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   oFLAG10 = oSource.datavalue("Tagname.FLAG(10)")
+   oFLAG11 = oSource.datavalue("Tagname.FLAG(11)")
+   if oFLAG10 = 1 or oFLAG11 = 1  then
+		oShape.objects("lineControlON").style.visibility = "visible"
+		oShape.objects("lineControlOFF").style.visibility = "hidden"
+   elseif oFLAG10 = 0 and oFLAG11 = 0  then
+		oShape.objects("lineControlON").style.visibility = "hidden"
+		oShape.objects("lineControlOFF").style.visibility = "visible"
+   end if
+    if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_S_HLSPCCAUS_SW_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+'--------------------------------------------
+'CUST_S_HLSPCCTL
+'--------------------------------------------
+Sub CUST_S_HLSPCCTL_SW_OnUpdate(oSource)
+   dim oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   oSPCALM = oSource.datavalue("Tagname1.SPCALM(1)")
+   if oSPCALM = 1 then
+		oShape.objects("lineControlON").style.visibility = "visible"
+		oShape.objects("lineControlOFF").style.visibility = "hidden"
+   elseif oSPCALM = 0 then
+		oShape.objects("lineControlON").style.visibility = "hidden"
+		oShape.objects("lineControlOFF").style.visibility = "visible"
+   end if
+    if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_S_HLSPCCTL_SW_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+'-------------------------------------------------------
+'CUST_SPLM1
+'-------------------------------------------------------
+Sub CUST_SPLM1_LOLimit_Onclick(oSource)
+   dim oShape, MaxEntry, MinEntry, Input
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   'Trend-1 tags & ranges
+	window.external.stationDataRepository.PutValue "Point_ACT_PNT", oSource.DataValue("Tagname.cp_ACT_PNT")
+	MaxEntry = csng(oSource.datavalue("cp_ACT_Point.cp_SPHILM"))
+	MinEntry = csng(oSource.datavalue("cp_ACT_Point.cp_PVEULO"))
+	Input = InputBox(oShape.objects("ConAlpDesc").value & " LOW LIMIT", "SETPOINT LIMIT ENTRY")
+	If IsNumeric(Input) and Len(Input) > 0 then
+		Input = csng(Input)
+		If Input >= MinEntry And Input <= MaxEntry then
+			oSource.SetDataValueWithSecurityLevel "cp_ACT_Point.cp_SPLOLM", Input, 4
+		ElseIf Input > MaxEntry Then
+			window.external.TemporaryMessageZoneText "LIMIT OR RANGE CROSSOVER"
+		Else
+			window.external.TemporaryMessageZoneText "ENTRY OUT OF RANGE"
+		End if
+	Else
+		window.external.TemporaryMessageZoneText "INVALID ENTRY"
+	End if
+end sub
+
+Sub CUST_SPLM1_HILimit_Onclick(oSource)
+   dim oShape, MaxEntry, MinEntry, Input
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   	window.external.stationDataRepository.PutValue "Point_ACT_PNT", oSource.DataValue("Tagname.cp_ACT_PNT")
+	MaxEntry = csng(oSource.datavalue("cp_ACT_Point.cp_PVEUHI"))
+	MinEntry = csng(oSource.datavalue("cp_ACT_Point.cp_SPLOLM"))
+	Input = InputBox(oShape.objects("ConAlpDesc").value & " HIGH LIMIT", "SETPOINT LIMIT ENTRY")
+	If IsNumeric(Input) and Len(Input) > 0 then
+		Input = csng(Input)
+		If Input >= MinEntry And Input <= MaxEntry then
+			oSource.SetDataValueWithSecurityLevel "cp_ACT_Point.cp_SPHILM", Input, 4
+		ElseIf Input > MaxEntry Then
+			window.external.TemporaryMessageZoneText "LIMIT OR RANGE CROSSOVER"
+		Else
+			window.external.TemporaryMessageZoneText "ENTRY OUT OF RANGE"
+		End if
+	Else
+		window.external.TemporaryMessageZoneText "INVALID ENTRY"
+	End if
+end sub
+
+'-------------------------------------------------------
+'CUST_HPM_$PM5_Refiner_PB
+'-------------------------------------------------------
+Sub CUST_HPM_Refiner_PB_AlpPV_OnUpdate(oSource)
+   dim iPV,oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+    iPV=oSource.value
+   	oShape.objects("TxtPVST0").innertext = oSource.datavalue("Tagname.STATETXT(0)")
+	oShape.objects("TxtPVST1").innertext = oSource.datavalue("Tagname.STATETXT(1)")
+
+	if iPV = oSource.datavalue("Tagname.STATETXT(0)") then
+		oShape.objects("RecFrame0").styleclass= oShape.getCustomProperty("Style","cp_StyleForPV0")
+		oShape.objects("RecFrame1").styleclass= oShape.getCustomProperty("Style","cp_StyleForNormal")
+	elseif iPV = oSource.datavalue("Tagname.STATETXT(1)") then
+		oShape.objects("RecFrame0").styleclass= oShape.getCustomProperty("Style","cp_StyleForNormal")
+		oShape.objects("RecFrame1").styleclass= oShape.getCustomProperty("Style","cp_StyleForPV1")
+	end if
+    if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_HPM_Refiner_PB_AlpPV_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+'-------------------------------------------------------
+'CUST_HPM_AlarmText_01, 02, 03
+'-------------------------------------------------------
+Sub CUST_HPM_AlarmText_AlpPV_OnUpdate(oSource)
+   dim iPV,oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+    iPV=oSource.value
+	oAlmState = csng(oShape.getCustomProperty("Num","cp_StateAlarm"))
+	oAlmStyle = oShape.getCustomProperty("Style","cp_StyleForAlarm")
+	if iPV = oAlmState then
+		oShape.objects("TxtAlarm").styleclass = oAlmStyle
+		oShape.style.visibility = "visible"
+	else
+		oShape.style.visibility = "hidden"
+	end if
+    if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_HPM_AlarmText_AlpPV_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+'-------------------------------------------------------
+'CUST_HPM_AlarmText_Analog_01, 02
+'-------------------------------------------------------
+Sub CUST_HPM_AlarmText_Analog_AlpPV_OnUpdate(oSource)
+   dim iPV,oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+    iPV=oSource.value
+	oAlmStyle = oShape.getCustomProperty("Style","cp_StyleForAlarm")
+	if iPV = 1 then
+		oShape.objects("TxtAlarm").styleclass = oAlmStyle
+		oShape.style.visibility = "visible"
+	else
+		oShape.style.visibility = "hidden"
+	end if
+    if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_HPM_AlarmText_Analog_AlpPV_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+'-------------------------------------------------------
+'CUST_CDA_AlarmText_01, 02, 03
+'-------------------------------------------------------
+Sub CUST_CDA_AlarmText_AlpPV_OnUpdate(oSource)
+   dim iPV,oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+    iPV=oSource.value
+	oAlmState = csng(oShape.getCustomProperty("Num","cp_StateAlarm"))
+	oAlmStyle = oShape.getCustomProperty("Style","cp_StyleForAlarm")
+	if iPV = oAlmState then
+		oShape.objects("TxtAlarm").styleclass = oAlmStyle
+		oShape.style.visibility = "visible"
+	else
+		oShape.style.visibility = "hidden"
+	end if
+    if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_CDA_AlarmText_AlpPV_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+'-------------------------------------------------------
+'CUST_HPM_Intlk_Flag_01, 02, 03
+'-------------------------------------------------------
+Sub CUST_HPM_IntlkFlag_AlpPV_OnUpdate(oSource)
+   dim iPV,oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+    iPV=oSource.value
+	Style_PV0=oShape.getCustomProperty("Style","cp_styleForPV0")
+	Style_PV1=oShape.getCustomProperty("Style","cp_styleForPV1")
+	if iPV = 1 then
+		oShape.objects("RecPV").styleclass = Style_PV1
+	elseif iPV = 0 then
+		oShape.objects("RecPV").styleclass = Style_PV0
+	end if
+    if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_HPM_IntlkFlag_AlpPV_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+'-------------------------------------------------------
+'CUST_CDA_IKTAR1
+'-------------------------------------------------------
+
+Sub CUST_CDA_IKTAR1_OnClick(oSource)
+  dim oShape, iPV, iPV1, iPV2
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   iPV=oSource.datavalue("tagname.cp_pv")
+   iPV1=oSource.datavalue("tagname1.cp_pv1")
+   iPV2=oSource.datavalue("tagname2.cp_pv2")
+	if iPV = 99 then
+		REAL01 = REAL01 + 1
+		oSource.datavalue("tagname.cp_pv") = REAL01
+		REAL01 = REAL01 + 1
+		oSource.datavalue("tagname1.cp_pv1") = REAL01
+		oSource.datavalue("tagname2.cp_pv2") = REAL01
+	end if
+end sub
+
+Sub CUST_CDA_IKTAR1_AlpPV_OnUpdate(oSource)
+   dim oShape, iPV
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   iPV=oSource.datavalue("tagname1.cp_pv1")
+   if Not oSource.IsNaN("tagname1.cp_pv1") then
+   		oSource.value = oSource.datavalue("tagname1.cp_pv1") / 2
+		if iPV = 99 then
+			oShape.objects("ScConAlpPV").style.visibility = "hidden"
+			oShape.objects("RecFrame").linecolor = vbyellow
+		else
+			oShape.objects("ScConAlpPV").style.visibility = "visible"
+			oShape.objects("RecFrame").styleclass = "RecFrame"
+		end if
+   end if
+   if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_CDA_IKTAR1_AlpPV_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+'-------------------------------------------------------
+'CUST_CDA_IKTAR2
+'-------------------------------------------------------
+Sub CUST_CDA_IKTAR2_OnClick(oSource)
+  dim oShape, iPV, iPV1, iPV2, iPV3
+   on error resume next
+	set oShape=oSource.parentnode.parentnode
+   iPV=oSource.datavalue("tagname.cp_pv")
+   iPV1=oSource.datavalue("tagname1.cp_pv1")
+   iPV2=oSource.datavalue("tagname2.cp_pv2")
+	if iPV <> 99 then
+		if iPV2 = 99 then
+			REAL01 = REAL01 + 1
+			oSource.datavalue("tagname2.cp_pv2") = REAL01
+			REAL01 = REAL01 + 1
+			oSource.datavalue("tagname1.cp_pv1") = REAL01
+			oSource.datavalue("tagname3.cp_pv3") = REAL01
+		end if
+	end if
+end sub
+
+Sub CUST_CDA_IKTAR2_AlpPV_OnUpdate(oSource)
+   dim oShape, iPV
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   iPV=oSource.datavalue("tagname.cp_pv")
+	if iPV = 99 then
+		oShape.style.visibility = "hidden"
+	else
+		oShape.style.visibility = "visible"
+	end if
+   if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_CDA_IKTAR2_AlpPV_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+'-------------------------------------------------------
+'CUST_K1K2_ADVC & CUST_K1K2_ADVC_InputBox
+'-------------------------------------------------------
+Sub CUST_K1K2_ADVC_OnClick(oSource)
+   dim oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+
+	'Trend-1 tags & ranges
+	window.external.stationDataRepository.PutValue "Tr1_Ent", oSource.DataValue("Tagname.cp_ac_pnt")	'ADVC_ENT
+	window.external.stationDataRepository.PutValue "Para_Tr1HiLm", oShape.getCustomProperty("Parameter","cp_ac_thi")
+	window.external.stationDataRepository.PutValue "Para_Tr1LoLm", oShape.getCustomProperty("Parameter","cp_ac_tlo")
+
+	'Trend-2 tags & ranges
+	window.external.stationDataRepository.PutValue "Tr2_Ent1", oSource.DataValue("Tagname.cp_actsptrd")
+	int103 = Fix (oSource.DataValue("Tagname.cp_ac_act"))
+	window.external.stationDataRepository.PutValue "Para_ent100", "ACT_PV" & "(" & int103 & ").external"		'ACTRTENT
+	window.external.stationDataRepository.PutValue "Para_Tr2HiLm", "act_thi" & "(" & int103 & ")"
+	window.external.stationDataRepository.PutValue "Para_Tr2LoLm", "act_tlo" & "(" & int103 & ")"
+
+	'Trend description
+	window.external.stationDataRepository.PutValue "Para_ac_desc1", oShape.getCustomProperty("Parameter","cp_ac_desc")
+	window.external.stationDataRepository.PutValue "Para_ac_desc2", "ACT_DESC" & "(" & int103 & ")"
+
+	'Set Trend Timebase
+	Timebase = oSource.DataValue("Tagname.cp_ac_ttim")
+	window.external.stationDataRepository.PutValue "Para_AC_TTIM", oShape.getCustomProperty("Parameter","cp_ac_ttim")
+	Select case Timebase
+		case 1
+			'document.getElementByID("BasicTrend1").SetPeriod 0,0,0,0,0,1,0
+			'document.getElementByID("BasicTrend2").SetPeriod 0,0,0,0,0,1,0
+			BasicTrend1.SetPeriod 0,0,0,0,0,1,0
+			BasicTrend2.SetPeriod 0,0,0,0,0,1,0
+			Sc_PB_Timebase.innerText = "TIMEBASE:1 MIN"
+		case 2
+			BasicTrend1.SetPeriod 0,0,0,0,0,2,0
+			BasicTrend2.SetPeriod 0,0,0,0,0,2,0
+			Sc_PB_Timebase.innerText = "TIMEBASE:2 MIN"
+		case 3
+			BasicTrend1.SetPeriod 0,0,0,0,0,5,0
+			BasicTrend2.SetPeriod 0,0,0,0,0,5,0
+			Sc_PB_Timebase.innerText = "TIMEBASE:5 MIN"
+		case 4
+			BasicTrend1.SetPeriod 0,0,0,0,0,10,0
+			BasicTrend2.SetPeriod 0,0,0,0,0,10,0
+			Sc_PB_Timebase.innerText = "TIMEBASE:10 MIN"
+		case 5
+			BasicTrend1.SetPeriod 0,0,0,0,0,20,0
+			BasicTrend2.SetPeriod 0,0,0,0,0,20,0
+			Sc_PB_Timebase.innerText = "TIMEBASE:20 MIN"
+		case 6
+			BasicTrend1.SetPeriod 0,0,0,0,1,0,0
+			BasicTrend2.SetPeriod 0,0,0,0,1,0,0
+			Sc_PB_Timebase.innerText = "TIMEBASE:1 HR"
+		case 7
+			BasicTrend1.SetPeriod 0,0,0,0,2,0,0
+			BasicTrend2.SetPeriod 0,0,0,0,2,0,0
+			Sc_PB_Timebase.innerText = "TIMEBASE:2 HR"
+		case 8
+			BasicTrend1.SetPeriod 0,0,0,0,8,0,0
+			BasicTrend2.SetPeriod 0,0,0,0,8,0,0
+			Sc_PB_Timebase.innerText = "TIMEBASE:8 HR"
+		case 9
+			BasicTrend1.SetPeriod 0,0,0,0,16,0,0
+			BasicTrend2.SetPeriod 0,0,0,0,16,0,0
+			Sc_PB_Timebase.innerText = "TIMEBASE:16 HR"
+		case 10
+			BasicTrend1.SetPeriod 0,0,0,0,24,0,0
+			BasicTrend2.SetPeriod 0,0,0,0,24,0,0
+			Sc_PB_Timebase.innerText = "TIMEBASE:24 HR"
+		case 11
+			BasicTrend1.SetPeriod 0,0,0,0,48,0,0
+			BasicTrend2.SetPeriod 0,0,0,0,48,0,0
+			Sc_PB_Timebase.innerText = "TIMEBASE:48 HR"
+	end select
+end sub
+
+Sub CUST_K1K2_ADVC_Alp_OnUpdate(oSource)
+  on error resume next
+	document.getElementByID("BasicTrend1").ChartArea.Plots(1).SetYAxisScale oSource.datavalue("tagname.Para_Tr1LoLm"), oSource.datavalue("tagname.Para_Tr1HiLm")
+	document.getElementByID("BasicTrend1").ChartArea.Plots(2).SetYAxisScale oSource.datavalue("tagname.Para_Tr1LoLm"), oSource.datavalue("tagname.Para_Tr1HiLm")
+
+	window.external.stationDataRepository.PutValue "Tr2_Ent2", oSource.DataValue("tagname.Para_ent100")
+	document.getElementByID("BasicTrend2").ChartArea.Plots(1).SetYAxisScale oSource.datavalue("tagname.Para_Tr2LoLm"), oSource.datavalue("tagname.Para_Tr2HiLm")
+	document.getElementByID("BasicTrend2").ChartArea.Plots(2).SetYAxisScale oSource.datavalue("tagname.Para_Tr2LoLm"), oSource.datavalue("tagname.Para_Tr2HiLm")
+end sub
+
+Sub CUST_K1K2_ADVC_InputBox_OnClick(oSource)
+	on error resume next
+	set oShape=oSource.parentnode
+	oShape.SetCustomProperty "Point", "Tr1_STRD_ENT", oSource.DataValue("Tagname.cp_ac_pnt")	'ADVC_ENT
+	intTimer_ADVC = window.setInterval ("Target_Entry(" & oSource.id & ")", 300)
+end sub
+
+Function Target_Entry(oSource)
+	dim oShape
+	on error resume next
+   	set oShape=oSource.parentnode.parentnode
+	Desc = oSource.datavalue("tagname.cp_ac_desc")
+	Input = InputBox(Desc & " TARGET", "TARGET ENTRY")
+	If IsNumeric(Input) and Len(Input) > 0 then
+		Input = csng(Input)
+		If Input <= csng(oSource.datavalue("tagname.cp_ac_tgthi")) and Input >= csng(oSource.datavalue("tagname.cp_ac_tgtlo")) then
+			oSource.datavalue("Tr1_STRD_ENT.PVTV") = Input
+		Else
+			window.external.TemporaryMessageZoneText "ENTRY OUT OF RANGE"
+		End if
+	Else
+		window.external.TemporaryMessageZoneText "INVALID ENTRY"
+	End if
+	window.clearInterval(intTimer_ADVC)
+End Function
+
+Sub CUST_ADVC_ACSTS_AlpPV_OnUpdate(oSource)
+   dim iPV,oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   iPV=oSource.datavalue("Tagname.cp_num")
+	Select Case iPV
+		case 0
+			oShape.objects("RecFrame2").styleclass="RecPV_Enum2"	'Yellow
+			oShape.objects("ScConAlp").styleclass="A_TextSmall"		'Black
+		case 1
+			oShape.objects("RecFrame2").styleclass="RecPV_Enum0"	'Green
+			oShape.objects("ScConAlp").styleclass="A_TextSmall"		'Black
+		case 2
+			oShape.objects("RecFrame2").styleclass="RecFrame"	'Gray
+			oShape.objects("ScConAlp").styleclass="ScConAlpPV_Enum4"	'Magenta
+		case 3
+			oShape.objects("RecFrame2").styleclass="RecFrame"	'Gray
+			oShape.objects("ScConAlp").styleclass="ScConAlpPV_Enum6"	'White
+		case 4
+			oShape.objects("RecFrame2").styleclass="RecFrame"	'Gray
+			oShape.objects("ScConAlp").styleclass="ScConAlpPV_Enum0"	'Green
+		case else
+			oShape.objects("RecFrame2").styleclass="RecPV_Enum1"	'Red
+			oShape.objects("ScConAlp").styleclass="A_TextSmall"	'Black
+		End Select
+    if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_ADVC_ACSTS_AlpPV_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+Sub CUST_ADVC_TargetSP_AlpPV_OnUpdate(oSource)
+   dim iPV,oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   iPV=oSource.datavalue("Tagname.cp_ac_spok")
+   iPV1=oSource.datavalue("Tagname.cp_num")
+   if iPV = 0 then
+	   	if iPV1 = 1 then
+			oShape.objects("RecFrame3").styleclass="RecPV_Enum3"	'Cyan
+			oShape.objects("ConAlpTarget").styleclass="A_TextLarge"	'Black
+		else
+			oShape.objects("RecFrame3").styleclass="RecFrame"	'Gray
+			oShape.objects("ConAlpTarget").styleclass="ScConAlpPV"	'Cyan
+		end if
+	else
+		oShape.objects("RecFrame3").styleclass="RecPV_Enum3"	'Cyan
+		oShape.objects("ConAlpTarget").styleclass="A_TextLarge"	'Black
+	end if
+    if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_ADVC_TargetSP_AlpPV_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+sub CUST_K1K2_ADVC_Numeric_AlpPVFormat_OnUpdate(oSource)
+   dim sFormat,oShape, nNumericFormat
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+      nNumericFormat= trim(oshape.getcustomproperty("Text","cp_pvformat"))
+   if IsNumeric(nNumericFormat) and instr(nNumericFormat,".")=0 then
+	  sFormat="%." & nNumericFormat & "f"
+	  if typename(oshape.objects("ConAlpActual"))<>"Nothing" then oShape.objects("ConAlpActual").numericdisplayformat=sFormat
+	  if typename(oshape.objects("ConAlpTarget"))<>"Nothing" then oShape.objects("ConAlpTarget").numericdisplayformat=sFormat
+   else 
+   	  window.external.LogMessage "CUST_K1K2_ADVC_Numeric_AlpPVFormat_OnUpdate ->" & oSource.id & " " & "Invalid PV Format: " & nNumericFormat 
+   end if
+   if err.number <>0 and window.external.environment = 0 then window.external.LogMessage "CUST_K1K2_ADVC_Numeric_AlpPVFormat_OnUpdate ->" & oSource.id & " " & err.description 
+end sub
+
+'-------------------------------------------------------
+'CUST_K1K2_ACT1
+'-------------------------------------------------------
+Sub CUST_ACT1_Mode_AlpPV_OnUpdate(oSource)
+   dim iPV,oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   iPV=oSource.value
+   if iPV = "P-AUTO" then
+		oShape.objects("RecFrame2").styleclass="RecFrame"	'Gray
+		oShape.objects("ScConAlp").styleclass="ScConAlpPV_Enum3"	'Cyan
+	elseif iPV = "AUTO" then
+		oShape.objects("RecFrame2").styleclass="RecPV_Enum2"	'Yellow
+		oShape.objects("ScConAlp").styleclass="A_TextSmall"	'Black
+	elseif iPV = "P-MAN" then
+		oShape.objects("RecFrame2").styleclass="RecFrame"	'Gray
+		oShape.objects("ScConAlp").styleclass="ScConAlpPV_Enum3"	'Cyan
+	elseif iPV = "MAN" then
+		oShape.objects("RecFrame2").styleclass="RecPV_Enum2"	'Yellow
+		oShape.objects("ScConAlp").styleclass="A_TextSmall"	'Black
+	elseif iPV = "P-CAS" then
+		oShape.objects("RecFrame2").styleclass="RecFrame"	'Gray
+		oShape.objects("ScConAlp").styleclass="ScConAlpPV_Enum3"	'Cyan
+	elseif iPV = "CAS" then
+		oShape.objects("RecFrame2").styleclass="RecPV_Enum3"	'Cyan
+		oShape.objects("ScConAlp").styleclass="A_TextSmall"	'Black
+	else
+		oShape.objects("RecFrame2").styleclass="RecFrame"	'Gray
+		oShape.objects("ScConAlp").styleclass="ScConAlpPV_Enum1"	'Red				
+	end if
+   if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_ACT1_Mode_AlpPV_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+Sub CUST_ACT1_SP_AlpPV_OnUpdate(oSource)
+   dim oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   ModeTag  = oSource.datavalue("Tagname.cp_act_pnt")
+   window.external.stationDataRepository.PutValue "Point_ACT_SP", ModeTag
+	if oSource.datavalue("Tagname.cp_act_trok")>0 and oSource.datavalue("Point_ACT_SP.mode")=oSource.datavalue("Tagname.cp_act_acm") and oSource.datavalue("Point_ACT_SP.modattr")=oSource.datavalue("Tagname.cp_act_acma") then
+		oShape.objects("RecFrame3").styleclass="RecPV_Enum3"	'Cyan
+		oShape.objects("ConAlpSP").styleclass="A_TextLarge"	'Black
+	else
+		oShape.objects("RecFrame3").styleclass="RecFrame"	'Gray
+		oShape.objects("ConAlpSP").styleclass="ConAlpSP"	'Cyan
+	end if
+   if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_ACT1_SP_AlpPV_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+Sub CUST_ACT1_AVG_AlpPV_OnUpdate(oSource)
+   dim oShape
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+	if oSource.datavalue("Tagname.cp_act_avg")>0 then
+		oShape.objects("RecFrame4").styleclass="RecPV_Enum0"	'Green
+		oShape.objects("ConAlpPV").styleclass="A_TextLarge"	'Black
+	else
+		oShape.objects("RecFrame4").styleclass="RecFrame"	'Gray
+		oShape.objects("ConAlpPV").styleclass="ScConAlpPV"	'Cyan
+	end if
+   if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_ACT1_AVG_AlpPV_OnUpdate ->" & oSource.id & " " & err.description    
+end sub
+
+Sub CUST_InputBox_SP_OnClick(oSource)
+   dim oShape, MaxEntry, MinEntry, Input, Index
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+	MaxEntry = csng(oSource.datavalue("Tagname.cp_act_trlm"))
+	MinEntry = csng(-1.0 * MaxEntry)
+	Index = Fix(oSource.datavalue("Tagname.cp_act_trok"))
+	window.external.stationDataRepository.PutValue "Point_AC_SP", oSource.DataValue("Tagname.cp_ac_pnt")	'sptr_ent
+	window.external.stationDataRepository.PutValue "Para_AC_SP", "sptrim" & "(" & Index & ")"
+	Input = InputBox(oShape.objects("ConAlpDesc").value & " SETPOINT CHANGE", "SETPOINT CHANGE ENTRY")
+	If IsNumeric(Input) and Len(Input) > 0 then
+		Input = csng(Input)
+		If Input >= MinEntry And Input <= MaxEntry then
+			oSource.datavalue("Point_AC_SP.Para_AC_SP") = Input
+		Else
+			window.external.TemporaryMessageZoneText "ENTRY OUT OF RANGE"
+		End if
+	Else
+		window.external.TemporaryMessageZoneText "INVALID ENTRY"
+	End if
+end sub
+
+'-------------------------------------
+'CUST_LB
+'--------------------------------------
+sub CUST_LB_Alp_OnUpdate(oSource)
+   dim oShape,oExStObj
+   on error resume next
+   set oShape=oSource.parentnode.parentnode
+   set oExStObj=oShape.objects("ScConAlpPV")
+   set oExStObj1=oShape.objects("ConAlpDesc")
+   if oSource.DataQuality("tagname.cp_ptexecst") = 1 then
+   		oShape.style.visibility = "visible"
+	   if oSource.DataValue("tagname.cp_ptexecst")=1 then
+		  oExStObj.textcolor=oshape.getcustomproperty("Style","cp_StyleForActive")
+		  oExStObj1.textcolor=oshape.getcustomproperty("Style","cp_StyleForActive")
+	   else
+		  oExStObj.textcolor=oshape.getcustomproperty("Style","cp_StyleForInActive")
+		  oExStObj1.textcolor=oshape.getcustomproperty("Style","cp_StyleForInActive")
+	   end if
+	else
+		oShape.style.visibility = "hidden"
+	end if
+   if err.number<>0 and window.external.environment = 0 then window.external.LogMessage "CUST_LB_Alp_OnUpdate ->" & oSource.id & " " & err.description
+end sub
+
+'-------------------------------------
+'CUST_CDA_Sootblower_IK
+'--------------------------------------
+
+sub CUST_CDA_Sootblower_IK_AlpPV_onUpdate(oSource)
+   dim oShape,oPVObj
+   on error resume next
+	set oShape=oSource.parentnode.parentnode
+	set oPVObj=oShape.objects("TxtPV")
+	set oRecPV =oShape.objects("RecFrame")
+	iPV=oSource.value
+	index=oShape.getCustomProperty("Style","cp_styleForPV" & iPV)
+
+	iQual = oSource.DataQuality("tagname.cp_pv")
+if (iQual and iQualityGood)=iQualityGood then
+	
+	if oSource.datavalue("tagname.cp_pv") = 6 then
+		oPVObj.styleclass="ScConAlpPV_" & index
+		oRecPV.styleclass="RecFrame"
+	elseif oSource.datavalue("tagname.cp_pv") = 5 and oSource.datavalue("tagname.cp_pv1") = 1 then
+		'oPVObj.styleclass="ScConAlpPV_" & index 'old stuff
+		oRecPV.styleclass="RecFrame"
+		oPVObj.textColorBlink = "True" 'Added to make inner green text blink
+		oPVObj.textColor = vbgreen		'RB 6/20/12
+	elseif oSource.datavalue("tagname.cp_pv") <> 5 and oSource.datavalue("tagname.cp_pv1") = 1 then
+		oPVObj.textcolor= vbblack
+		oPVObj.textColorBlink = "False" 'Added to correct black text blink issue RB 6/21/12
+		oRecPV.styleclass="RecPV_" & oShape.getCustomProperty("Style","cp_styleForPV1")	
+	elseif oSource.datavalue("tagname.cp_pv") = 4 then 
+		oPVObj.styleclass="ScConAlpPV_" & index
+		oRecPV.styleclass="RecFrame"
+		
+'	elseif oSource.datavalue("tagname.cp_pv") = 4 and oSource.datavalue("tagname.cp_pv1") = 1 then
+'		oPVObj.textcolor= vbblack
+'		oRecPV.styleclass="RecPV_" & oShape.getCustomProperty("Style","cp_styleForPV1")	
+	else
+		oPVObj.styleclass= "ScConAlpPV_Enum4" 'Corrected from Enum04 to Enum4 RB 6/21/12
+		oRecPV.styleclass="RecFrame"						
+	end if
+else
+	oPVObj.styleclass="ScConAlpPV_" & oShape.getcustomproperty("Style","cp_StyleForPV" & cstr(oSource.value))
+end if
+	if err.number<>0 and window.external.environment = 0 then window.external.LogMessage " CUST_CDA_Sootblower_IK_AlpPV_onUpdate ->" & oSource.id & " " & err.description 
+end sub]]></script></scripts><parameters><parameter name="Revision" type="Num" description="" defaultvalue="R400 Rev.0"/></parameters><shapes><shape><element><html><content><![CDATA[
+<DIV tabIndex=-1 id=TxtGSH class=hvg.textbox.1 style="FONT-SIZE: 8pt; OVERFLOW: hidden; TEXT-DECORATION: none; HEIGHT: 40px; FONT-FAMILY: Arial; WIDTH: 103px; POSITION: absolute; FONT-WEIGHT: bold; COLOR: #000000; FONT-STYLE: normal; TEXT-ALIGN: center; LEFT: 4px; TOP: 4px; BEHAVIOR: url(#HDXVectorFactory#text); VISIBILITY: hidden" HDX_LOCK="-1" globalscripts hdxproperties="FillColor:#dda0dd;fillColorBlink:False;FillStyle:0;Height:40;lineColorBlink:False;LineStyle:1;textColor:#000000;textColorBlink:False;TotalRotation:-1;value:;Width:103;">CUST General Script Holder<BR>{%Num::Revision%} </DIV>]]></content></html></element></shape></shapes></shapefile>
